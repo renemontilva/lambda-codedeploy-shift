@@ -1,0 +1,9 @@
+applicationName: CodeployApp
+deployStrategies:
+  - name: Normal
+    deploymentGroup: CanaryNormal
+  - name: Fast
+    deploymentGroup: CanaryFast
+  - name: Slow
+    deploymentGroup: CanarySlow
+activeStrategy: Normal
