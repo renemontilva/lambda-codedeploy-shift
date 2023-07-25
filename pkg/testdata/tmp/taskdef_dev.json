@@ -1,0 +1,146 @@
+{
+    "executionRoleArn": "arn:aws:iam::123456789:role/dev-app-exec",
+    "containerDefinitions": [
+      {
+        "image":"<IMAGE1_NAME>",
+        "memory": 2048,
+        "cpu": 1024,
+        "memoryReservation": 2048,
+        "essential": true,
+        "readonlyRootFilesystem": false,
+        "name": "service-name",
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/cluster-name",
+            "awslogs-region": "us-east-1",
+            "awslogs-create-group": "true",
+            "awslogs-stream-prefix": "app-name"
+          }
+        },
+        "portMappings": [
+          {
+            "hostPort": 5000,
+            "protocol": "tcp",
+            "containerPort": 5000
+          }
+        ],
+        "environment": [
+          {
+            "name": "APP_MODULE",
+            "value": "app.main:create_app()"
+          },
+          {
+            "name": "AWS_DEFAULT_REGION",
+            "value": "us-east-1"
+          },
+          {
+            "name": "ENV",
+            "value": "dev"
+          },
+          {
+            "name": "IS_ASYNC",
+            "value": "1"
+          },
+          {
+            "name": "MASTER_DB_HOST",
+            "value": "dev-db.example.com"
+          },
+          {
+            "name": "MASTER_DB_NAME",
+            "value": "db"
+          },
+          {
+            "name": "MASTER_DB_USER",
+            "value": "app-name-d"
+          },
+          {
+            "name": "MODULE_NAME",
+            "value": "app.main"
+          },
+          {
+            "name": "PORT",
+            "value": "5000"
+          },
+          {
+            "name": "READ_DB_HOST",
+            "value": "dev-db.example.com"
+          },
+          {
+            "name": "READ_DB_NAME",
+            "value": "mydb"
+          },
+          {
+            "name": "READ_DB_USER",
+            "value": "app-name-d"
+          },
+        ],
+        "resourceRequirements": null,
+        "ulimits": [
+          {
+            "name": "nofile",
+            "softLimit": 1024,
+            "hardLimit": 1024
+          }
+        ],
+        "secrets": [
+          {
+            "valueFrom": "arn:aws:secretsmanager:us-east-1:123456789123:secret:dev2/core/sp-api/credentials-etnxzj:SP_API_APP_ID::",
+            "name": "APP_SP_API_APP_ID"
+          }
+        ]
+      }
+    ],
+    "placementConstraints": [],
+    "memory": "2048",
+    "taskRoleArn": "arn:aws:iam::123456789123:role/dev-app-name-task",
+    "compatibilities": [
+      "EC2",
+      "FARGATE"
+    ],
+    "taskDefinitionArn": "<TASK_DEFINITION>",
+    "family": "dev-app-name",
+    "requiresAttributes": [
+      {
+        "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+      },
+      {
+        "name": "ecs.capability.execution-role-awslogs"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.ecr-auth"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+      },
+      {
+        "name": "ecs.capability.secrets.asm.environment-variables"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.task-iam-role"
+      },
+      {
+        "name": "ecs.capability.execution-role-ecr-pull"
+      },
+      {
+        "name": "ecs.capability.secrets.ssm.environment-variables"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+      },
+      {
+        "name": "ecs.capability.task-eni"
+      },
+      {
+        "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+      }
+    ],
+    "requiresCompatibilities": [
+      "FARGATE"
+    ],
+    "networkMode": "awsvpc",
+    "cpu": "1024"
+  }

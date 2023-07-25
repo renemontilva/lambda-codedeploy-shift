@@ -6,4 +6,4 @@ deployStrategies:
     deploymentGroup: CanaryFast
   - name: Slow
     deploymentGroup: CanarySlow
-activeStrategy: Normal
+preferredStrategy: Normal

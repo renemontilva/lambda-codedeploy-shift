@@ -3,26 +3,46 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"golang.org/x/exp/slog"
 )
 
-// File name used for update codedeploy
-var deployShiftFile = "deployShift.yaml"
+var logger *slog.Logger
 
-// Handler is our lambda handler invoked by the `lambda.Start` function call
+func initLogger() {
+
+	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+}
+
+// Handler is the lambda handler invoked by the `lambda.Start` function call
 func Handler(cxt context.Context, event events.CodePipelineJobEvent) error {
+	initLogger()
+	environment := os.Getenv("ENVIRONMENT")
 	// Get bucket and key from event
+	logger.Info("Event received",
+		slog.String("bucket", event.CodePipelineJob.Data.InputArtifacts[0].Location.S3Location.BucketName),
+		slog.String("key", event.CodePipelineJob.Data.InputArtifacts[0].Location.S3Location.ObjectKey),
+	)
+
+	// Pipeline
+	pipeline, err := NewPipeline(event.CodePipelineJob.ID)
+	if err != nil {
+		logger.Error("Error returned from NewPipeline",
+			slog.String("Detail", err.Error()),
+		)
+		return err
+	}
+
+	// Create S3Object
 	object, err := NewS3Object(
 		fmt.Sprintf("%s/", event.CodePipelineJob.Data.InputArtifacts[0].Location.S3Location.BucketName),
-		deployShiftFile,
-		S3ObjectWithLocalPath(fmt.Sprintf("/tmp/%s", deployShiftFile)),
+		event.CodePipelineJob.Data.InputArtifacts[0].Location.S3Location.ObjectKey,
 		S3ObjectWithAWSConfig(&aws.Config{
-			Region:   aws.String("us-east-1"),
-			Endpoint: aws.String("http://localstack:4566"),
 			Credentials: credentials.NewStaticCredentials(
 				event.CodePipelineJob.Data.ArtifactCredentials.AccessKeyID,
 				event.CodePipelineJob.Data.ArtifactCredentials.SecretAccessKey,
@@ -30,22 +50,61 @@ func Handler(cxt context.Context, event events.CodePipelineJobEvent) error {
 		}),
 	)
 	if err != nil {
-		return fmt.Errorf("Error returned from NewS3Object: %w", err)
+		logger.Error("Error returned from NewS3Object",
+			slog.String("Detail", err.Error()),
+		)
+		return err
 	}
-	// Get file from S3 and save to /tmp
-	object.Download()
-	// Read file from /tmp
-	deployShift, err := NewDeployShift(object.LocalPath)
+	// Get files from S3 and save to /tmp
+	folderPath, err := object.Download()
 	if err != nil {
-		return fmt.Errorf("Error returned from NewDeployShift: %w", err)
+		pipeline.JobFailed(err.Error())
+		logger.Error("Error returned from Download",
+			slog.String("Detail", err.Error()),
+		)
+		return err
 	}
-	// Current Strategy
-	deploymentGroup, err := deployShift.CurrentStrategy()
+
+	// Create Deploy object
+	deploy, err := NewDeploy(folderPath, DeployWithTaskDefFileName(fmt.Sprintf("taskdef_%s.json", environment)))
 	if err != nil {
-		return fmt.Errorf("Error returned from CurrentStrategy: %w", err)
+		pipeline.JobFailed(err.Error())
+		logger.Error("error returned from NewDeploy",
+			slog.String("Detail", err.Error()),
+		)
+		return fmt.Errorf("error returned from NewDeploy: %w", err)
 	}
-	// Update Strategy
-	deployShift.DeployStrategy()
-	log.Printf("ApplicationName: %s Current Strategy: %s", deployShift.ApplicationName, deploymentGroup)
+	// Preferred Strategy
+	deploymentGroup, err := deploy.PreferredStrategy()
+	if err != nil {
+		pipeline.JobFailed(err.Error())
+		logger.Error("Error returned from PreferredStrategy",
+			slog.String("Detail", err.Error()),
+		)
+		return fmt.Errorf("error returned from PreferredStrategy: %w", err)
+	}
+	logger.Info("Preferred Strategy", slog.String("DeploymentGroup", deploymentGroup))
+	// Deploy Strategy to CodeDeploy
+	logger.Info("Deploying Preferred Strategy",
+		slog.String("ApplicationName", deploy.DeployShift.ApplicationName),
+		slog.String("DeploymentGroup", deploymentGroup),
+		slog.String("deployShiftFileName", deploy.DeployShiftFileName),
+		slog.String("taskDefFileName", deploy.TaskDefFileName),
+		slog.String("appSpecFileName", deploy.AppSpecFileName),
+	)
+	deployID, err := deploy.DeployStrategy(event.CodePipelineJob.ID)
+	if err != nil {
+		pipeline.JobFailed(err.Error())
+		logger.Error("Error returned from DeployStrategy",
+			slog.String("Detail", err.Error()),
+		)
+		return err
+	}
+	logger.Info("Deployed Preferred Strategy",
+		slog.String("DeploymentId", deployID),
+	)
+	// Send Success to CodePipeline
+	pipeline.JobSucceeded()
+
 	return nil
 }
