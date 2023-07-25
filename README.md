@@ -3,6 +3,9 @@
 
 This repository contains the source code for a Lambda function that allows you to shift deployment strategies based on a descriptive .yaml file. The Lambda function uses the information provided in the deployShift.yaml file to modify its deployment behavior, allowing for more flexibility and control over the deployment process.
 
+## Infrastructure Diagram
+![diagram](config/assets/invoke_lambda.png)
+
 ## Setup and Deployment
 
 1. Clone the repository.
