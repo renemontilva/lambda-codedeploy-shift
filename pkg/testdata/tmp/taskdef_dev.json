@@ -73,7 +73,7 @@
           {
             "name": "READ_DB_USER",
             "value": "app-name-d"
-          },
+          }
         ],
         "resourceRequirements": null,
         "ulimits": [
