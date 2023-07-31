@@ -8,9 +8,8 @@ import (
 
 func TestNewAppSpec(t *testing.T) {
 	appSpec, err := NewAppSpec("testdata/tmp", "appspec.yaml")
-	if err != nil {
-		t.Errorf("Error returned from NewAppSpec %v", err)
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, appSpec)
 	assert.Equal(t, "<TASK_DEFINITION>", appSpec.Resources[0].TargetService.Properties.TaskDefinition)
 
 }

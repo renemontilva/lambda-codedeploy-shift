@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/codedeploy"
-	"gopkg.in/yaml.v3"
 )
 
 type Deploy struct {
@@ -52,13 +50,9 @@ func NewDeploy(folderPath string, options ...optionDeploy) (Deploy, error) {
 		}
 	}
 
-	yamlFile, err := os.ReadFile(filepath.Join(folderPath, deploy.DeployShiftFileName))
+	err := convertYAMLToType(filepath.Join(folderPath, deploy.DeployShiftFileName), &deploy.DeployShift)
 	if err != nil {
-		return Deploy{}, fmt.Errorf("error reading YAML file: %w", err)
-	}
-	err = yaml.Unmarshal(yamlFile, &deploy.DeployShift)
-	if err != nil {
-		return Deploy{}, fmt.Errorf("error unmarshalling YAML file: %w", err)
+		return Deploy{}, fmt.Errorf("error returned from NewDeploy: %w", err)
 	}
 
 	deploy.Client, err = deploy.connectCodeDeploy()

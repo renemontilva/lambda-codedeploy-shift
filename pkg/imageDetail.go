@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 )
 
@@ -12,14 +10,10 @@ type ImageDetail struct {
 }
 
 func NewImageDetail(folderPath, fileName string) (ImageDetail, error) {
-	imageDetail := ImageDetail{}
-	jsonFile, err := os.ReadFile(filepath.Join(folderPath, fileName))
+	var imageDetail ImageDetail
+	err := convertJSONToType(filepath.Join(folderPath, fileName), &imageDetail)
 	if err != nil {
-		return imageDetail, fmt.Errorf("error reading JSON file: %w", err)
-	}
-	err = json.Unmarshal(jsonFile, &imageDetail)
-	if err != nil {
-		return imageDetail, fmt.Errorf("error unmarshalling JSON file: %w", err)
+		return imageDetail, fmt.Errorf("error returned from NewImageDetail: %w", err)
 	}
 	return imageDetail, nil
 }

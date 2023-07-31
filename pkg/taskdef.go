@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,14 +14,10 @@ type TaskDef ecs.TaskDefinition
 type optionTaskDef func(*TaskDef) error
 
 func NewTaskDef(folderPath, fileName string, options ...optionTaskDef) (TaskDef, error) {
-	taskDef := TaskDef{}
-	jsonFile, err := os.ReadFile(filepath.Join(folderPath, fileName))
+	var taskDef TaskDef
+	err := convertJSONToType(filepath.Join(folderPath, fileName), &taskDef)
 	if err != nil {
-		return taskDef, fmt.Errorf("error reading JSON file: %w", err)
-	}
-	err = json.Unmarshal(jsonFile, &taskDef)
-	if err != nil {
-		return taskDef, fmt.Errorf("error unmarshalling JSON file: %w", err)
+		return taskDef, fmt.Errorf("error returned from NewTaskDef: %w", err)
 	}
 
 	for _, option := range options {

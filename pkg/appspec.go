@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
@@ -35,14 +34,11 @@ type LoadBalancerInfo struct {
 type optionAppSpec func(*AppSpec) error
 
 func NewAppSpec(folderPath, fileName string, options ...optionAppSpec) (AppSpec, error) {
-	appSpec := AppSpec{}
-	yamlFile, err := os.ReadFile(filepath.Join(folderPath, fileName))
+	var appSpec AppSpec
+
+	err := convertYAMLToType(filepath.Join(folderPath, fileName), &appSpec)
 	if err != nil {
-		return appSpec, fmt.Errorf("error reading YAML file: %w", err)
-	}
-	err = yaml.Unmarshal(yamlFile, &appSpec)
-	if err != nil {
-		return appSpec, fmt.Errorf("error unmarshalling YAML file: %w", err)
+		return appSpec, fmt.Errorf("error returned from NewAppSpec: %w", err)
 	}
 
 	for _, option := range options {
